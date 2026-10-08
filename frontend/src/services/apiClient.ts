@@ -1,6 +1,8 @@
 import { ApiError, ApiErrorResponse } from './ApiErro';
 
-const BASE_URL = 'http://10.0.2.2:3000';
+
+// trocar posteriormente para verificação isProduction
+const BASE_URL = process.env.API_URL_PUBLIC_API_UR || 'http://10.0.2.2:3000';
 
 interface RequestOptions extends Omit<RequestInit, 'body'> {
     body?: unknown;
