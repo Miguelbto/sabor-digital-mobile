@@ -1,4 +1,4 @@
-import { ApiError, ApiErrorResponse } from '../types/error';
+import { ApiError, ApiErrorResponse } from './ApiErro';
 
 const BASE_URL = 'http://10.0.2.2:3000';
 
