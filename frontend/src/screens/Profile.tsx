@@ -1,3 +1,5 @@
 
 
-export default function profile() {}
+export default function ProfileScreen() {
+    return (<></>)
+}
