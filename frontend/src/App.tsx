@@ -5,17 +5,23 @@ import {
   Image,
   TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
   StatusBar,
   ScrollView,
   Platform,
 } from 'react-native';
 import Svg, { Path, Rect, Circle, Defs, LinearGradient as SvgLinearGradient, Stop, G, Text as SvgText, TSpan } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
+// 1. Importa o hook em vez do componente
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 
-export default function Home() {
+export default function WelcomeScreen() {
+  const navigation = useNavigation<any>();
+  // 2. Obtém as margens exatas do dispositivo (top, bottom, left, right)
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <StatusBar barStyle="dark-content" backgroundColor="#FAF9F6" />
       
       <ScrollView 
@@ -24,7 +30,7 @@ export default function Home() {
       >
         <View style={styles.content}>
           
-          {/* BEGIN: BrandLogoHeader */}
+          {/* BrandLogoHeader */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
               <Svg height="48" width="160" viewBox="0 0 240 60">
@@ -53,9 +59,8 @@ export default function Home() {
               </Svg>
             </View>
           </View>
-          {/* END: BrandLogoHeader */}
 
-          {/* BEGIN: CategoryBadge */}
+          {/* CategoryBadge */}
           <View style={styles.badgeContainer}>
             <Svg width="14" height="14" fill="none" stroke="#7A2E1E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
               <Path d="M18 2l-4 4-2-2-4 4 4 4 6-6" />
@@ -65,22 +70,20 @@ export default function Home() {
             </Svg>
             <Text style={styles.badgeText}>ALTA GASTRONOMIA</Text>
           </View>
-          {/* END: CategoryBadge */}
 
-          {/* BEGIN: HeroHeadings */}
+          {/* HeroHeadings */}
           <View style={styles.heroContainer}>
             <Text style={styles.heroTitle}>O melhor sabor,{"\n"}entregue na sua porta.</Text>
             <Text style={styles.heroSubtitle}>
               Experiência culinária incomparável de chefs renomados para sua mesa.
             </Text>
           </View>
-          {/* END: HeroHeadings */}
 
-          {/* BEGIN: FeatureCard */}
+          {/* FeatureCard */}
           <View style={styles.card}>
             <View style={styles.cardImageContainer}>
               <Image 
-                source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD8-Uhqz0xR2rOHaFg5GyrUBCsZxu-K_n1O-KplR3VmqefC1kzJZ0L9xIbAbOOW2-a9J6HtsX2Fabkzgo72grb75FIEtXWWP691iUv6mt8SBDRvaaU8TMDRrUrDpfKeI48W1sxriEXZPNEUcoBGf2W09Z_SUxwJUPGisIGyKWEFf_IBZeWA5saEok6LV7JqnBb1HRc_vU032XkJLBk-_6AXiiATGV4FzuIrVTE89UavSaeF7C63TTcI7Q' }} 
+                source={{ uri: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=600&q=80' }} 
                 style={styles.cardImage} 
               />
               
@@ -109,17 +112,15 @@ export default function Home() {
               </Text>
             </View>
           </View>
-          {/* END: FeatureCard */}
 
-          {/* BEGIN: CarouselIndicators */}
+          {/* CarouselIndicators */}
           <View style={styles.carouselIndicators}>
             <View style={[styles.dot, styles.activeDot]} />
             <View style={styles.dot} />
             <View style={styles.dot} />
           </View>
-          {/* END: CarouselIndicators */}
 
-          {/* BEGIN: SocialProofPill */}
+          {/* SocialProofPill */}
           <View style={styles.socialProof}>
             <Svg width="14" height="14" viewBox="0 0 20 20" fill="#FBBF24">
               <Path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
@@ -129,14 +130,17 @@ export default function Home() {
               (mais de <Text style={styles.socialBold}>35 mil</Text> clientes satisfeitos)
             </Text>
           </View>
-          {/* END: SocialProofPill */}
 
         </View>
       </ScrollView>
 
-      {/* BEGIN: ActionButtons */}
+      {/* ActionButtons */}
       <View style={styles.footer}>
-        <TouchableOpacity style={styles.primaryButton} activeOpacity={0.8}>
+        <TouchableOpacity 
+          style={styles.primaryButton} 
+          activeOpacity={0.8} 
+          onPress={() => navigation.navigate('Login')}
+        >
           <Text style={styles.primaryButtonText}>Fazer Login</Text>
           <Svg width="18" height="18" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
             <Path d="M5 12h14" />
@@ -144,25 +148,28 @@ export default function Home() {
           </Svg>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.6}>
+        <TouchableOpacity 
+          style={styles.secondaryButton} 
+          activeOpacity={0.6} 
+          onPress={() => navigation.navigate('Register')}
+        >
           <Text style={styles.secondaryButtonText}>Criar Conta</Text>
         </TouchableOpacity>
       </View>
-      {/* END: ActionButtons */}
       
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  container: {
     flex: 1,
     backgroundColor: '#FAF9F6',
   },
   scrollContainer: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingTop: 32,
+    paddingTop: 16,
     paddingBottom: 20,
     alignItems: 'center',
   },
@@ -363,7 +370,6 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 10 : 24,
     backgroundColor: '#FAF9F6',
     alignItems: 'center',
     gap: 14,
