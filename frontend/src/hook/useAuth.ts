@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContexts';
 
 export function useAuth() {
     const context = useContext(AuthContext);
+    const { signUp } = useAuth() // rever pra utilizalo no registrar
 
     if (!context) {
         throw new Error('useAuth deve ser usado dentro de um AuthProvider');
