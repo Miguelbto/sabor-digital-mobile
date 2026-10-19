@@ -1,406 +1,718 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
   StyleSheet,
-  SafeAreaView,
-  StatusBar,
+  Text,
+  View,
+  TextInput,
+  TouchableOpacity,
   ScrollView,
-  Platform,
+  Image,
+  Animated,
+  StatusBar,
 } from 'react-native';
-import Svg, { Path, Rect, Circle, Defs, LinearGradient as SvgLinearGradient, Stop, G, Text as SvgText, TSpan } from 'react-native-svg';
-import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialIcons } from '@expo/vector-icons';
+import { SafeAreaProvider } from 'react-native-safe-area-context'
 
-export default function Home() {
+// Paleta de Cores Fiéis ao Tema Material Design / Tailwind do HTML
+const COLORS = {
+  background: '#fcf9f8',
+  surfaceLowest: '#ffffff',
+  surfaceLow: '#f6f3f2',
+  surfaceContainer: '#f0eded',
+  surfaceHigh: '#eae7e7',
+  surfaceHighest: '#e5e2e1',
+  primary: '#b02f00',
+  primaryContainer: '#ff5722',
+  onPrimary: '#ffffff',
+  onSurface: '#1b1b1c',
+  onSurfaceVariant: '#5b4039',
+  secondaryFixed: '#ffdad6',
+  onSecondaryFixed: '#410002',
+  tertiaryFixed: '#ffdf9e',
+  onTertiaryFixed: '#261a00',
+  onPrimaryFixed: '#3b0900',
+  amberStar: '#f59e0b',
+  toastBackground: '#303030',
+  toastText: '#f3f0ef',
+};
+
+// Interface para os Itens do Cardápio
+interface MenuItem {
+  id: string;
+  nome: string;
+  descricao: string;
+  preco: string;
+  avaliacao: string;
+  tempo: string;
+  imagem: string;
+  badge?: {
+    texto?: string;
+    icone?: keyof typeof MaterialIcons.glyphMap;
+    corIcone?: string;
+    bg?: string;
+  };
+}
+
+const PRATOS_MOCK: MenuItem[] = [
+  {
+    id: '1',
+    nome: 'Risoto de Cogumelos Trufado',
+    descricao: 'Arroz arbóreo al dente, mix de shimeji, shiitake e azeite trufado finalizado com parmesão curado.',
+    preco: 'R$ 54,90',
+    avaliacao: '4.9',
+    tempo: '20-30 min',
+    imagem: 'https://images.unsplash.com/photo-1633964913295-ceb43826e7c9?auto=format&fit=crop&w=300&q=80',
+    badge: { icone: 'eco', corIcone: '#2e7d32' },
+  },
+  {
+    id: '2',
+    nome: 'Picanha Grelhada com Farofa',
+    descricao: 'Corte nobre na brasa, acompanha farofa crocante de mandioca tostada na manteiga e vinagrete fresco.',
+    preco: 'R$ 68,00',
+    avaliacao: '4.8',
+    tempo: '25-35 min',
+    imagem: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=300&q=80',
+    badge: { texto: 'Chef', bg: COLORS.primaryContainer },
+  },
+  {
+    id: '3',
+    nome: 'Nhoque ao Pomodoro Rústico',
+    descricao: 'Massa artesanal de batata suave, molho de tomates San Marzano assados e manjericão fresco.',
+    preco: 'R$ 48,00',
+    avaliacao: '4.7',
+    tempo: '18-25 min',
+    imagem: 'https://images.unsplash.com/photo-1551183053-bf91a1d81141?auto=format&fit=crop&w=300&q=80',
+    badge: { icone: 'favorite', corIcone: '#d97706' },
+  },
+  {
+    id: '4',
+    nome: 'Salmão Grelhado com Aspargos',
+    descricao: 'Filé alto selado no ponto exato, mousseline de ervilha suave e aspargos salteados na flor de sal.',
+    preco: 'R$ 64,50',
+    avaliacao: '4.9',
+    tempo: '22-30 min',
+    imagem: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=300&q=80',
+  },
+];
+
+const CATEGORIAS = ['Entradas', 'Principais', 'Bebidas', 'Sobremesas', 'Combos'];
+
+export default function HomeScreen() {
+  const [activeCategory, setActiveCategory] = useState('Principais')
+  const [selectedFilters, setSelectedFilters] = useState<string[]>(['Mais Vendidos'])
+  const [search, setSearch] = useState('')
+
+  //Estado para Toast Feedback de adição ao carrinho
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const toastOpacity = useState(new Animated.Value(0))[0];
+
+  const triggerToast = (itemNome: string) => {
+    setToastMessage(`${itemNome} adicionado`!);
+    Animated.sequence([
+      Animated.timing(toastOpacity, {toValue: 1, duration: 250, useNativeDriver: true }),
+      Animated.delay(1800),
+      Animated.timing(toastOpacity, { toValue: 0, duration: 250, useNativeDriver: true}),
+    ]).start(() => setToastMessage(null))
+  }
+
+  const toggleFilter = (filterName: string) => {
+    if (selectedFilters.includes(filterName)){
+      setSelectedFilters(selectedFilters.filter((f) => f !== filterName));
+    } else {
+      setSelectedFilters([...selectedFilters, filterName])
+    }
+  }
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FAF9F6" />
-      
-      <ScrollView 
-        contentContainerStyle={styles.scrollContainer}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.content}>
+    <SafeAreaProvider style={styles.safeArea}>
+      <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+
+      {/* Header Superior */}
+      <View style={styles.header}>
+        <View style={styles.brandContainer}>
+          <View style={styles.logoCircle}>
+            <MaterialIcons name="restaurant-menu" size={20} color={COLORS.primary} />
+          </View>
+          <View>
+            <Text style={styles.brandTitle}>Sabor & Cia</Text>
+            <Text style={styles.brandSubtitle}>Cardápio</Text>
+          </View>
+        </View>
+
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.iconButton} activeOpacity={0.7}>
+            <MaterialIcons name="notifications-none" size={22} color={COLORS.onSurfaceVariant} />
+            <View style={styles.notificationBadge} />
+          </TouchableOpacity>
           
-          {/* BEGIN: BrandLogoHeader */}
-          <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <Svg height="48" width="160" viewBox="0 0 240 60">
-                <Defs>
-                  <SvgLinearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <Stop offset="0%" stopColor="#FF5722" />
-                    <Stop offset="100%" stopColor="#FF8A65" />
-                  </SvgLinearGradient>
-                </Defs>
-                <G>
-                  <Rect x="4" y="6" width="48" height="48" rx="14" fill="url(#brandGrad)" />
-                  <Path d="M28 17 C22 17 17 22 17 28 L39 28 C39 22 34 17 28 17 Z" fill="#FFFFFF" />
-                  <Circle cx="28" cy="15" r="2.5" fill="#FFD54F" />
-                  <Rect x="15" y="30" width="26" height="3" rx="1.5" fill="#FFFFFF" />
-                  <Path d="M22 36 Q28 41 34 36" fill="none" stroke="#FFFFFF" strokeLinecap="round" strokeWidth="2.5" />
-                </G>
-                <SvgText x="62" y="31" fill="#1E1E1E" fontSize="20" fontWeight="bold" letterSpacing="-0.5">
-                  Sabor<TSpan fill="#FF5722">.</TSpan>
-                </SvgText>
-                <SvgText x="125" y="31" fill="#FFC107" fontSize="20" fontWeight="bold">
-                  & Cia
-                </SvgText>
-                <SvgText x="63" y="44" fill="#757575" fontSize="9.5" fontWeight="bold" letterSpacing="1.2">
-                  DELIVERY GOURMET
-                </SvgText>
-              </Svg>
+          <TouchableOpacity activeOpacity={0.8}>
+            <Image
+              source={{ uri: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80' }}
+              style={styles.avatar}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        
+        {/* Barra de Busca e Abas Fixas */}
+        <View style={styles.stickySearchWrapper}>
+          <View style={styles.searchContainer}>
+            <MaterialIcons name="search" size={20} color={COLORS.onSurfaceVariant} style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar prato, ingrediente..."
+              placeholderTextColor={COLORS.onSurfaceVariant}
+              value={search}
+              onChangeText={setSearch}
+            />
+            <TouchableOpacity style={styles.filterIconButton}>
+              <MaterialIcons name="tune" size={20} color={COLORS.primaryContainer} />
+            </TouchableOpacity>
+          </View>
+
+          {/* Carrossel de Categorias */}
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesContainer}>
+            {CATEGORIAS.map((cat) => {
+              const isActive = activeCategory === cat;
+              return (
+                <TouchableOpacity
+                  key={cat}
+                  style={styles.categoryTab}
+                  onPress={() => setActiveCategory(cat)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.categoryTabText, isActive && styles.categoryTabTextActive]}>
+                    {cat}
+                  </Text>
+                  <View style={[styles.tabIndicator, isActive && styles.tabIndicatorActive]} />
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+
+        {/* Chips de Filtro Rápido */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chipsContainer}>
+          {[
+            { label: 'Mais Vendidos', icon: 'local-fire-department', color: COLORS.primaryContainer },
+            { label: 'Destaque do Chef', icon: 'workspace-premium', color: COLORS.amberStar },
+            { label: 'Vegetariano', icon: 'spa', color: '#2e7d32' },
+            { label: 'Sem Glúten', icon: 'grain', color: '#d97706' },
+          ].map((chip) => {
+            const isSelected = selectedFilters.includes(chip.label);
+            return (
+              <TouchableOpacity
+                key={chip.label}
+                style={[styles.chipButton, isSelected && styles.chipButtonSelected]}
+                onPress={() => toggleFilter(chip.label)}
+                activeOpacity={0.8}
+              >
+                <MaterialIcons
+                  name={chip.icon as any}
+                  size={16}
+                  color={isSelected ? COLORS.onPrimary : chip.color}
+                />
+                <Text style={[styles.chipText, isSelected && styles.chipTextSelected]}>
+                  {chip.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        {/* Cabeçalho da Seção de Pratos */}
+        <View style={styles.sectionHeader}>
+          <View style={styles.sectionHeaderLeft}>
+            <Text style={styles.sectionTitle}>Pratos Principais</Text>
+            <View style={styles.badgeCount}>
+              <Text style={styles.badgeCountText}>8 opções</Text>
             </View>
           </View>
-          {/* END: BrandLogoHeader */}
-
-          {/* BEGIN: CategoryBadge */}
-          <View style={styles.badgeContainer}>
-            <Svg width="14" height="14" fill="none" stroke="#7A2E1E" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-              <Path d="M18 2l-4 4-2-2-4 4 4 4 6-6" />
-              <Path d="M6 18l4-4" />
-              <Path d="M14.5 9.5L5 19" />
-              <Path d="M3 21l3-3" />
-            </Svg>
-            <Text style={styles.badgeText}>ALTA GASTRONOMIA</Text>
+          <View style={styles.kitchenActive}>
+            <MaterialIcons name="restaurant" size={14} color={COLORS.primary} />
+            <Text style={styles.kitchenActiveText}>Cozinha ativa</Text>
           </View>
-          {/* END: CategoryBadge */}
+        </View>
 
-          {/* BEGIN: HeroHeadings */}
-          <View style={styles.heroContainer}>
-            <Text style={styles.heroTitle}>O melhor sabor,{"\n"}entregue na sua porta.</Text>
-            <Text style={styles.heroSubtitle}>
-              Experiência culinária incomparável de chefs renomados para sua mesa.
-            </Text>
-          </View>
-          {/* END: HeroHeadings */}
-
-          {/* BEGIN: FeatureCard */}
-          <View style={styles.card}>
-            <View style={styles.cardImageContainer}>
-              <Image 
-                source={{ uri: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD8-Uhqz0xR2rOHaFg5GyrUBCsZxu-K_n1O-KplR3VmqefC1kzJZ0L9xIbAbOOW2-a9J6HtsX2Fabkzgo72grb75FIEtXWWP691iUv6mt8SBDRvaaU8TMDRrUrDpfKeI48W1sxriEXZPNEUcoBGf2W09Z_SUxwJUPGisIGyKWEFf_IBZeWA5saEok6LV7JqnBb1HRc_vU032XkJLBk-_6AXiiATGV4FzuIrVTE89UavSaeF7C63TTcI7Q' }} 
-                style={styles.cardImage} 
-              />
-              
-              <View style={styles.freshBadge}>
-                <Svg width="14" height="14" fill="none" stroke="#059669" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                  <Path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z" />
-                  <Path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12" />
-                </Svg>
-                <Text style={styles.freshBadgeText}>100% Fresco</Text>
+        {/* Lista de Cards do Cardápio */}
+        <View style={styles.menuList}>
+          {PRATOS_MOCK.map((item) => (
+            <View key={item.id} style={styles.card}>
+              <View style={styles.cardImageContainer}>
+                <Image source={{ uri: item.imagem }} style={styles.cardImage} />
+                {item.badge && (
+                  <View
+                    style={[
+                      styles.cardBadge,
+                      item.badge.bg ? { backgroundColor: item.badge.bg } : styles.cardBadgeBlur,
+                    ]}
+                  >
+                    {item.badge.icone && (
+                      <MaterialIcons name={item.badge.icone} size={11} color={item.badge.corIcone || '#fff'} />
+                    )}
+                    {item.badge.texto && (
+                      <Text style={styles.cardBadgeText}>{item.badge.texto}</Text>
+                    )}
+                  </View>
+                )}
               </View>
 
-              <LinearGradient 
-                colors={['transparent', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.8)']} 
-                style={styles.cardGradient}
-              >
-                <View style={styles.premiumTag}>
-                  <Text style={styles.premiumTagText}>QUALIDADE PREMIUM</Text>
+              <View style={styles.cardContent}>
+                <Text style={styles.cardTitle} numberOfLines={1}>
+                  {item.nome}
+                </Text>
+                <Text style={styles.cardDescription} numberOfLines={2}>
+                  {item.descricao}
+                </Text>
+
+                {/* Avaliação e Tempo */}
+                <View style={styles.cardMetaRow}>
+                  <View style={styles.metaBadge}>
+                    <MaterialIcons name="star" size={13} color={COLORS.amberStar} />
+                    <Text style={styles.metaText}>{item.avaliacao}</Text>
+                  </View>
+                  <View style={styles.metaBadge}>
+                    <MaterialIcons name="schedule" size={13} color={COLORS.onSurfaceVariant} />
+                    <Text style={styles.metaText}>{item.tempo}</Text>
+                  </View>
                 </View>
-                <Text style={styles.premiumTitle}>Ingredientes Selecionados</Text>
-              </LinearGradient>
+
+                {/* Preço e Botão Adicionar */}
+                <View style={styles.cardFooter}>
+                  <Text style={styles.cardPrice}>{item.preco}</Text>
+                  <TouchableOpacity
+                    style={styles.addButton}
+                    onPress={() => triggerToast(item.nome)}
+                    activeOpacity={0.8}
+                  >
+                    <MaterialIcons name="add" size={20} color={COLORS.onPrimary} />
+                  </TouchableOpacity>
+                </View>
+              </View>
             </View>
-
-            <View style={styles.cardBody}>
-              <Text style={styles.cardDescription}>
-                Pratos autorais feitos com ingredientes criteriosamente frescos, orgânicos locais e cortes nobres preparados por mestres da alta gastronomia.
-              </Text>
-            </View>
-          </View>
-          {/* END: FeatureCard */}
-
-          {/* BEGIN: CarouselIndicators */}
-          <View style={styles.carouselIndicators}>
-            <View style={[styles.dot, styles.activeDot]} />
-            <View style={styles.dot} />
-            <View style={styles.dot} />
-          </View>
-          {/* END: CarouselIndicators */}
-
-          {/* BEGIN: SocialProofPill */}
-          <View style={styles.socialProof}>
-            <Svg width="14" height="14" viewBox="0 0 20 20" fill="#FBBF24">
-              <Path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </Svg>
-            <Text style={styles.socialText}>
-              <Text style={styles.socialBold}>4.9 </Text>
-              (mais de <Text style={styles.socialBold}>35 mil</Text> clientes satisfeitos)
-            </Text>
-          </View>
-          {/* END: SocialProofPill */}
-
+          ))}
         </View>
+
+        {/* Banner Promocional de Combo */}
+        <View style={styles.promoBanner}>
+          <View style={styles.promoGlow} />
+          <View style={styles.promoContent}>
+            <View style={styles.promoLeft}>
+              <View style={styles.promoIconContainer}>
+                <MaterialIcons name="local-bar" size={26} color={COLORS.tertiaryFixed} />
+              </View>
+              <View style={styles.promoTextContainer}>
+                <View style={styles.promoTagsRow}>
+                  <View style={styles.comboTag}>
+                    <Text style={styles.comboTagText}>COMBO ESPECIAL</Text>
+                  </View>
+                  <Text style={styles.promoSavingsText}>Economize 20%</Text>
+                </View>
+                <Text style={styles.promoTitle}>Turbine seu prato com bebida!</Text>
+                <Text style={styles.promoSubtitle}>Suco natural ou refrigerante artesanal</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.promoButton} activeOpacity={0.85}>
+              <Text style={styles.promoButtonText}>Ver</Text>
+              <MaterialIcons name="arrow-forward" size={14} color={COLORS.primary} />
+            </TouchableOpacity>
+          </View>
+        </View>
+
       </ScrollView>
 
-      {/* BEGIN: ActionButtons */}
-      <View style={styles.footer}>
-        <TouchableOpacity style={styles.primaryButton} activeOpacity={0.8}>
-          <Text style={styles.primaryButtonText}>Criar Conta</Text>
-          <Svg width="18" height="18" fill="none" stroke="#FFFFFF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-            <Path d="M5 12h14" />
-            <Path d="M12 5l7 7-7 7" />
-          </Svg>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.6}>
-          <Text style={styles.secondaryButtonText}>Já tenho uma conta / Entrar</Text>
-        </TouchableOpacity>
-      </View>
-      {/* END: ActionButtons */}
-      
-    </SafeAreaView>
+      {/* Toast Notificação de Item Adicionado */}
+      {toastMessage && (
+        <Animated.View style={[styles.toastContainer, { opacity: toastOpacity }]}>
+          <MaterialIcons name="check-circle" size={18} color={COLORS.primaryContainer} />
+          <Text style={styles.toastText}>{toastMessage}</Text>
+        </Animated.View>
+      )}
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#FAF9F6',
+    backgroundColor: COLORS.background,
   },
-  scrollContainer: {
-    flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 32,
-    paddingBottom: 20,
-    alignItems: 'center',
-  },
-  content: {
-    width: '100%',
-    maxWidth: 420,
-    alignItems: 'center',
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 32,
   },
   header: {
-    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: COLORS.background,
   },
-  logoContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.8)',
-    paddingHorizontal: 24,
-    paddingVertical: 8,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#F5F5F5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 3,
-      },
-      android: {
-        elevation: 2,
-      },
-    }),
-  },
-  badgeContainer: {
+  brandContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FDEEE9',
-    paddingHorizontal: 16,
+    gap: 8,
+  },
+  logoCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: COLORS.secondaryFixed,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  brandTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  brandSubtitle: {
+    fontSize: 11,
+    color: COLORS.onSurfaceVariant,
+    fontWeight: '500',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  iconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.surfaceLow,
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 9,
+    right: 9,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: COLORS.primary,
+  },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  stickySearchWrapper: {
+    marginTop: 4,
+    gap: 12,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surfaceLow,
+    borderRadius: 12,
+    height: 48,
+    paddingHorizontal: 12,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: COLORS.onSurface,
+  },
+  filterIconButton: {
+    padding: 4,
+  },
+  categoriesContainer: {
+    gap: 20,
+    paddingVertical: 4,
+  },
+  categoryTab: {
+    alignItems: 'center',
+    paddingBottom: 6,
+  },
+  categoryTabText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.onSurfaceVariant,
+  },
+  categoryTabTextActive: {
+    color: COLORS.primaryContainer,
+  },
+  tabIndicator: {
+    height: 3,
+    width: '100%',
+    backgroundColor: 'transparent',
+    borderRadius: 2,
+    marginTop: 4,
+  },
+  tabIndicatorActive: {
+    backgroundColor: COLORS.primaryContainer,
+  },
+  chipsContainer: {
+    gap: 8,
+    paddingVertical: 12,
+  },
+  chipButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: COLORS.surfaceHigh,
+    paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    marginBottom: 16,
-    gap: 6,
   },
-  badgeText: {
-    color: '#7A2E1E',
-    fontSize: 11,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+  chipButtonSelected: {
+    backgroundColor: COLORS.primaryContainer,
   },
-  heroContainer: {
+  chipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.onSurface,
+  },
+  chipTextSelected: {
+    color: COLORS.onPrimary,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginTop: 8,
+    marginBottom: 12,
+  },
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.onSurface,
+  },
+  badgeCount: {
+    backgroundColor: COLORS.surfaceHighest,
     paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
   },
-  heroTitle: {
-    fontSize: 26,
-    fontWeight: '900',
-    color: '#191919',
-    textAlign: 'center',
-    marginBottom: 10,
-    lineHeight: 32,
-    letterSpacing: -0.5,
+  badgeCountText: {
+    fontSize: 11,
+    color: COLORS.onSurfaceVariant,
+    fontWeight: '600',
   },
-  heroSubtitle: {
-    fontSize: 14,
-    color: '#525252',
-    textAlign: 'center',
-    fontWeight: '500',
-    lineHeight: 22,
-    maxWidth: 320,
+  kitchenActive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  kitchenActiveText: {
+    fontSize: 11,
+    color: COLORS.onSurfaceVariant,
+  },
+  menuList: {
+    gap: 12,
   },
   card: {
-    width: '100%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 28,
-    overflow: 'hidden',
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#F5F5F5',
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 8 },
-        shadowOpacity: 0.08,
-        shadowRadius: 24,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
+    flexDirection: 'row',
+    backgroundColor: COLORS.surfaceLowest,
+    borderRadius: 16,
+    padding: 10,
+    gap: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
   },
   cardImageContainer: {
-    width: '100%',
-    height: 220,
+    width: 84,
+    height: 84,
+    borderRadius: 12,
+    overflow: 'hidden',
     position: 'relative',
-    backgroundColor: '#F5F5F5',
   },
   cardImage: {
     width: '100%',
     height: '100%',
-    resizeMode: 'cover',
   },
-  freshBadge: {
+  cardBadge: {
     position: 'absolute',
-    top: 14,
-    left: 14,
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-    flexDirection: 'row',
+    top: 4,
+    left: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 6,
   },
-  freshBadgeText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#262626',
+  cardBadgeBlur: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
-  cardGradient: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingTop: 40,
-    paddingBottom: 12,
-    paddingHorizontal: 16,
+  cardBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#ffffff',
   },
-  premiumTag: {
-    backgroundColor: '#FF5722',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    marginBottom: 4,
+  cardContent: {
+    flex: 1,
+    justifyContent: 'space-between',
   },
-  premiumTagText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  premiumTitle: {
-    color: '#FFFFFF',
-    fontSize: 17,
-    fontWeight: 'bold',
-    letterSpacing: -0.3,
-  },
-  cardBody: {
-    padding: 20,
+  cardTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: COLORS.onSurface,
   },
   cardDescription: {
-    fontSize: 13.5,
-    lineHeight: 22,
-    color: '#525252',
-    fontWeight: '500',
-  },
-  carouselIndicators: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    marginBottom: 16,
-  },
-  dot: {
-    width: 6,
-    height: 6,
-    backgroundColor: '#D4D4D4',
-    borderRadius: 3,
-  },
-  activeDot: {
-    width: 24,
-    backgroundColor: '#FF5722',
-  },
-  socialProof: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(229, 229, 229, 0.6)',
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 6,
-    marginBottom: 20,
-  },
-  socialText: {
     fontSize: 12,
-    color: '#404040',
-    fontWeight: '500',
+    color: COLORS.onSurfaceVariant,
+    marginTop: 2,
+    lineHeight: 16,
   },
-  socialBold: {
-    fontWeight: 'bold',
-    color: '#171717',
+  cardMetaRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 6,
   },
-  footer: {
-    width: '100%',
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 10 : 24,
-    backgroundColor: '#FAF9F6',
+  metaBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 4,
+    backgroundColor: COLORS.surfaceHigh,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
   },
-  primaryButton: {
-    width: '100%',
-    maxWidth: 420,
-    backgroundColor: '#FF5722',
-    paddingVertical: 16,
+  metaText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.onSurface,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  cardPrice: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  addButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: COLORS.primaryContainer,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  promoBanner: {
+    marginTop: 24,
+    backgroundColor: COLORS.primary,
+    borderRadius: 16,
+    padding: 14,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  promoGlow: {
+    position: 'absolute',
+    right: -20,
+    top: -20,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(255, 87, 34, 0.3)',
+  },
+  promoContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  promoLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  promoIconContainer: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  promoTextContainer: {
+    flex: 1,
+  },
+  promoTagsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  comboTag: {
+    backgroundColor: COLORS.tertiaryFixed,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+  },
+  comboTagText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: COLORS.onTertiaryFixed,
+  },
+  promoSavingsText: {
+    fontSize: 11,
+    color: COLORS.tertiaryFixed,
+  },
+  promoTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginTop: 2,
+  },
+  promoSubtitle: {
+    fontSize: 11,
+    color: COLORS.secondaryFixed,
+  },
+  promoButton: {
+    backgroundColor: COLORS.surfaceLowest,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: 4,
+  },
+  promoButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primary,
+  },
+  toastContainer: {
+    position: 'absolute',
+    bottom: 20,
+    alignSelf: 'center',
+    backgroundColor: COLORS.toastBackground,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#FF5722',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.4,
-        shadowRadius: 25,
-      },
-      android: {
-        elevation: 6,
-      },
-    }),
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
-  primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  secondaryButton: {
-    paddingVertical: 8,
-  },
-  secondaryButtonText: {
-    fontSize: 13.5,
-    fontWeight: 'bold',
-    color: '#A72D00',
+  toastText: {
+    color: COLORS.toastText,
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
